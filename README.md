@@ -17,6 +17,7 @@ LOTUSIM_MODELS_PATH=$LOTUSIM_PATH/assets/models
 LOTUSIM_SCENARIO_WS=$HOME/Documents/workspace/lotusim/lotusim-generic-scenario/
 CONFIG_DIR="$LOTUSIM_SCENARIO_WS/src/simulation_run/config"
 UNITY_EXE_PATH="$LOTUSIM_SCENARIO_WS/lotusim_unity_executables/lotusim_scenario_linux/lotusim_scenario.x86_64"
+```
 
 Clone the repository in the correct location (or update paths accordingly):
 
