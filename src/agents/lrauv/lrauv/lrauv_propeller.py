@@ -132,7 +132,6 @@ class LrauvPropeller(Lrauv):
             return self.thruster_names[0]
         return "unknown_thruster"
 
-
     def send_propeller_command(self, rpm: float, pd: float):
         """
         Prepare and send a propeller command message.
@@ -148,10 +147,7 @@ class LrauvPropeller(Lrauv):
         cmd = VesselCmd()
         cmd.vessel_name = getattr(self, "name", "UNKNOWN")  # Use agent name if available
         # JSON command automatically uses the thruster name
-        cmd.cmd_string = json.dumps({
-            f"{thruster}(rpm)": rpm,
-            f"{thruster}(P/D)": pd
-        })
+        cmd.cmd_string = json.dumps({f"{thruster}(rpm)": rpm, f"{thruster}(P/D)": pd})
         cmd_array.cmds.append(cmd)
 
         # Publish the message
@@ -159,7 +155,6 @@ class LrauvPropeller(Lrauv):
 
         # Also log with ROS logger
         self.get_logger().info(f"{cmd.vessel_name} - {thruster} command published: rpm={rpm}, P/D={pd}")
-
 
     def control_lrauv_callback(self, msg: Bool):
         """
@@ -175,4 +170,4 @@ class LrauvPropeller(Lrauv):
             if self.nav_timer is not None:
                 self.nav_timer.cancel()
                 self.nav_timer = None
-            self.send_propeller_command(rpm=100.0, pd=0.88) # example to send a propeller command
+            self.send_propeller_command(rpm=100.0, pd=0.88)  # example to send a propeller command

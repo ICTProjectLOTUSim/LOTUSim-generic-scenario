@@ -243,8 +243,10 @@ def generate_lotus_param(
     Generate the <lotus_param> XML block for LOTUSim.
 
     Behavior:
-      - If xdyn_ip & xdyn_port are provided → include <physics_engine_interface> (XDyn).
-      - If xdyn_ip & xdyn_port are None → DO NOT include physics_engine_interface at all.
+        - <physics_engine_interface> is generated if at least one domain is provided.
+        - Domain-specific backends:
+            * Aerial → ROS2 (no XDyn required)
+            * Other domains → XDynWebSocket (requires xdyn_ip & xdyn_port)
 
     Args:
         model_name (str): Rendering type name.
@@ -266,30 +268,37 @@ def generate_lotus_param(
     # ------------------------------------------------------------------
     # PHYSICS BLOCK — ONLY IF XDyn is used
     # ------------------------------------------------------------------
+
     physics_block = ""
 
-    if xdyn_ip and xdyn_port:
-
+    if domains:
         physics_block = "\n  <physics_engine_interface>"
 
         for domain in domains:
             domain_lower = domain.lower()
-
             physics_block += f"\n    <{domain_lower}>"
 
-            # Thruster XML list
-            thruster_xml = "".join(f"\n        <thruster{i}>{t}</thruster{i}>" for i, t in enumerate(thrusters, 1))
+            if domain == "Aerial":
+                physics_block += """
+                    <connection_type>ROS2</connection_type>
+                    <namespace>aerialWorld</namespace>
+                """
+            else:
+                if xdyn_ip and xdyn_port:
+                    thruster_xml = "".join(
+                        f"\n        <thruster{i}>{t}</thruster{i}>" for i, t in enumerate(thrusters, 1)
+                    )
 
-            physics_block += f"""
-      <connection_type>XDynWebSocket</connection_type>
-      <uri>ws://{xdyn_ip}:{xdyn_port}</uri>
-      <thrusters>{thruster_xml}
-      </thrusters>"""
+                    physics_block += f"""
+                        <connection_type>XDynWebSocket</connection_type>
+                        <uri>ws://{xdyn_ip}:{xdyn_port}</uri>
+                        <thrusters>{thruster_xml}
+                        </thrusters>
+                    """
 
             physics_block += f"\n    </{domain_lower}>"
 
-        # Initial domain
-        init_state = domains[0] if domains else "Surface"
+        init_state = domains[0]
         physics_block += f"\n    <init_state>{init_state}</init_state>"
         physics_block += "\n  </physics_engine_interface>"
 
