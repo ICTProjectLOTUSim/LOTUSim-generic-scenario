@@ -13,7 +13,7 @@
 # - Starts main Python simulation with debug mode support
 #
 # @version 0.1
-# @date 2026-03-04
+# @date 2026-04-08
 #
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at:
@@ -48,7 +48,7 @@ echo -e "${GREEN}[INFO] Detected Ubuntu ${UBUNTU_VERSION} → ROS 2 ${ROS_DISTRO
 
 # -------------------- Parameters --------------------
 # Set ROS 2 Domain ID used across all processes
-ROS_DOMAIN_ID=10
+ROS_DOMAIN_ID=0
 
 # Set ROS_IP to the first local IP address if it is not already defined. 
 # To use a specific IP, set ROS_IP manually before using this file, 
@@ -58,6 +58,15 @@ export ROS_IP="${ROS_IP:-$(hostname -I | awk '{print $1}')}"
 # Unity mode options:
 #   "exe"    → run pre-built Unity executable (default)
 #   "editor" → open Unity project in Editor for debugging
+
+# Setup Logging Directory
+export LOG_DIR="$(pwd)/scenario_logs/$(date +%Y-%m-%d_%H-%M-%S)"
+mkdir -p "$LOG_DIR"
+
+# Redirect ALL script output (stdout and stderr) to both the terminal and a main log file
+exec > >(tee -i "$LOG_DIR/main_simulation.log") 2>&1
+
+echo -e "${GREEN}[INFO] Scenario execution logs will be saved to: $LOG_DIR${NC}"
 UNITY_MODE="exe"
 
 # -------------------- Paths --------------------
@@ -210,11 +219,11 @@ if [[ "$USE_UNITY" == "true" ]]; then
     source \"$LOTUSIM_WS/install/setup.bash\"
     export ROS_DOMAIN_ID=$ROS_DOMAIN_ID
     export ROS_IP=$ROS_IP
-    ros2 run ros_tcp_endpoint default_server_endpoint --address 0.0.0.0 --tcp_ip 127.0.0.1 --ros-args --log-level DEBUG
+    ros2 run ros_tcp_endpoint default_server_endpoint --address 0.0.0.0 --tcp_ip 127.0.0.1 --ros-args --log-level DEBUG 2>&1 | tee \"$LOG_DIR/ros_tcp_endpoint.log\"
     exec bash
   " &
   CHILD_PIDS+=($!)
-  echo -e "${GREEN}[INFO] ROS–Unity TCP bridge started.${NC}"
+  echo -e "${GREEN}[INFO] ROS–Unity TCP bridge started (logging to $LOG_DIR/ros_tcp_endpoint.log).${NC}"
   sleep 1
 fi
 
@@ -252,7 +261,7 @@ for agent_type in $AGENT_TYPES; do
             gnome-terminal -- bash -c "
                 export ROS_DOMAIN_ID=$ROS_DOMAIN_ID
                 export ROS_IP=$ROS_IP
-                xdyn-for-cs \"$yml_file\" --address 127.0.0.1 --port $port --dt 0.2;
+                xdyn-for-cs \"$yml_file\" --address 127.0.0.1 --port $port --dt 0.2 2>&1 | tee \"$LOG_DIR/xdyn_${agent_type}.log\";
                 exec bash
             " &
             CHILD_PIDS+=($!)
@@ -300,7 +309,6 @@ fi
 ARGS=("--config" "$CONFIG_FILE")
 [[ "$DEBUG_MODE" == "true" ]] && ARGS+=("--debug")
 [[ "$GZ_GUI" == "true" ]] && ARGS+=("--gui")
-
 
 echo -e "${YELLOW}[INFO] Launching simulation with debug: $DEBUG_MODE${NC}"
 
