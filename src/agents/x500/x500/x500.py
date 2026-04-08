@@ -56,6 +56,7 @@ class X500(Agent):
         """
         self.num = self.get_unique_model_num()
         self.model_name = "x500"
+        self.renderer_type_name = self.model_name
 
         # xdyn_enabled cannot be true for aerial agents
         self.xdyn_port = None
@@ -77,7 +78,7 @@ class X500(Agent):
             str: A JSON-formatted string containing simulation and control parameters.
         """
         return utils.generate_lotus_param(
-            self.model_name,
+            self.renderer_type_name,
             domains=self.domains,
             thrusters=[],
             xdyn_ip=self.xdyn_ip,

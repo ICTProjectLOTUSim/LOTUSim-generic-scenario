@@ -167,7 +167,7 @@ def generate_random_pose(agent_first_domain: str) -> List[float]:
 
 
 def generate_lotus_param(
-    model_name,
+    renderer_type_name,
     domains: list[str],
     thrusters: list[str],
     xdyn_ip: str | None,
@@ -207,10 +207,10 @@ def generate_lotus_param(
     # RENDER BLOCK — always present
     # ------------------------------------------------------------------
     render_block = f"""
-  <render_interface>
-    <publish_render>true</publish_render>
-    <renderer_type_name>{model_name}</renderer_type_name>
-  </render_interface>"""
+    <render_interface>
+        <publish_render>true</publish_render>
+        <renderer_type_name>{renderer_type_name}</renderer_type_name>
+    </render_interface>"""
 
     # ------------------------------------------------------------------
     # PHYSICS BLOCK — ONLY IF XDyn is used
