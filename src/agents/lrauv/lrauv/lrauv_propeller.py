@@ -62,7 +62,7 @@ class LrauvPropeller(Lrauv):
         # Optional ROS2 subscriber to manually control start/stop
         self.control_lrauv = self.create_subscription(
             Bool,
-            f"/{world_name}/{self.name}/control_lrauv",
+            f"/{world_name}/{self.agent_name}/control_lrauv",
             self.control_lrauv_callback,
             self.qos_profile,
         )

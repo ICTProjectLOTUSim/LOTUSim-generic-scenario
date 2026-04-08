@@ -54,6 +54,7 @@ class Wamv(Agent):
         """
         self.num = self.get_unique_model_num()
         self.model_name = "wamv"
+        self.renderer_type_name = self.model_name
         if xdyn_enabled:
             self.xdyn_port = 12348
             self.xdyn_ip = "127.0.0.1"
@@ -76,7 +77,7 @@ class Wamv(Agent):
             str: A JSON-formatted string containing simulation and control parameters.
         """
         return utils.generate_lotus_param(
-            self.model_name,
+            self.renderer_type_name,
             domains=self.domains,  # specific domain
             thrusters=[""],  # specific thruster names
             xdyn_ip=self.xdyn_ip,

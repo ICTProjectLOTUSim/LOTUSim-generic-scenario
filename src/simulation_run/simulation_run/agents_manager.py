@@ -21,7 +21,7 @@ to launch all agents and manage their lifecycles, enabling coordinated and
 heterogeneous multi-agent simulation management.
 
 @version 0.1
-@date 2025-10-08
+@date 2026-03-04
 
 This program and the accompanying materials are made available under the
 terms of the Eclipse Public License 2.0 which is available at:
@@ -33,6 +33,7 @@ Copyright (c) 2025 Naval Group
 """
 
 import logging
+import traceback
 from typing import Any, Dict, List, Optional, Tuple
 
 import rclpy
@@ -89,7 +90,7 @@ class AgentsManager:
             try:
                 agent.send_single_delete_cmd()
             except Exception as e:
-                logging.error(f"Failed to send delete command for {agent.name}: {e}")
+                logging.error(f"Failed to send delete command for {agent.agent_name}: {e}")
 
     def get_agent(self, name: str) -> Optional[Any]:
         """
@@ -129,7 +130,7 @@ class AgentsManager:
         try:
             nb_agents = agent_info.get("nb_agents", 1)
             poses = agent_info.get("poses", [])
-            model_path = agent_info.get("model", "")
+            sdf_file = agent_info.get("sdf_file", "")
             # If xdYn is already a bool in the new JSON
             xdyn_enabled = bool(agent_info.get("xdyn", False))
 
@@ -142,10 +143,14 @@ class AgentsManager:
 
             for i in range(nb_agents):
                 instance_name = f"{agent_class.__name__.lower()}{i}"
-                unique_sdf = model_path.replace("{model_name}", instance_name) if model_path else ""
+
+                unique_sdf = sdf_file.replace("{model_name}", instance_name) if sdf_file else ""
+
+                logging.info(f"Creating agent '{instance_name}' of type '{agent_type}' with SDF from '{sdf_file}'")
 
                 agent_node = self._create_agent_instance(agent_class, unique_sdf, world_name, xdyn_enabled)
-                agent_node.name = instance_name
+                agent_node.agent_name = instance_name
+                agent_node.sdf_file = sdf_file
 
                 pose = poses[i] if i < len(poses) else utils.generate_random_pose(agent_node.get_first_domain())
 
@@ -153,6 +158,7 @@ class AgentsManager:
 
         except Exception as e:
             logging.error(f"Unexpected error creating agent '{agent_type}': {e}")
+            logging.error(traceback.format_exc())
 
     def _create_agent_instance(
         self,
@@ -172,7 +178,7 @@ class AgentsManager:
         pose: Any,
     ) -> None:
         """Registers an agent to the executor and queues it for spawning."""
-        self.agents[agent_node.name] = agent_node
+        self.agents[agent_node.agent_name] = agent_node
         executor.add_node(agent_node)
         spawn_queue.append((agent_node, pose))
 
@@ -182,4 +188,4 @@ class AgentsManager:
             try:
                 agent_node.send_single_mas_cmd(pose)
             except Exception as e:
-                logging.error(f"Failed to send mission command for {agent_node.name}: {e}")
+                logging.error(f"Failed to send mission command for {agent_node.agent_name}: {e}")

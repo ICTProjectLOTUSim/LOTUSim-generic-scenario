@@ -54,6 +54,7 @@ class Lrauv(Agent):
         """
         self.num = self.get_unique_model_num()
         self.model_name = "lrauv"
+        self.renderer_type_name = self.model_name
         if xdyn_enabled:
             self.xdyn_port = 12346
             self.xdyn_ip = "127.0.0.1"
@@ -75,7 +76,7 @@ class Lrauv(Agent):
             str: A JSON-formatted string containing simulation and control parameters.
         """
         return utils.generate_lotus_param(
-            self.model_name,
+            self.renderer_type_name,
             domains=self.domains,  # specific domain
             thrusters=["propeller"],  # specific thruster names
             xdyn_ip=self.xdyn_ip,

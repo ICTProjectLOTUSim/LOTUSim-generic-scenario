@@ -33,6 +33,19 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
+# -------------------- Detect ROS Distro --------------------
+UBUNTU_VERSION="$(lsb_release -rs 2>/dev/null || true)"
+case "$UBUNTU_VERSION" in
+  22.04) ROS_DISTRO="humble" ;;
+  24.04) ROS_DISTRO="jazzy" ;;
+  *)
+    echo -e "${RED}[ERROR] Unsupported Ubuntu version: ${UBUNTU_VERSION:-unknown}. Supported: 22.04 (Humble), 24.04 (Jazzy).${NC}"
+    exit 1
+    ;;
+esac
+ROS_SETUP="/opt/ros/${ROS_DISTRO}/setup.bash"
+echo -e "${GREEN}[INFO] Detected Ubuntu ${UBUNTU_VERSION} → ROS 2 ${ROS_DISTRO^}${NC}"
+
 # -------------------- Parameters --------------------
 # Set ROS 2 Domain ID used across all processes
 ROS_DOMAIN_ID=10
@@ -70,7 +83,8 @@ command_exists() {
 }
 
 # -------------------- Source ROS --------------------
-source /opt/ros/humble/setup.bash
+[[ -f "$ROS_SETUP" ]] || die "ROS 2 setup not found at $ROS_SETUP. Is ROS 2 ${ROS_DISTRO^} installed?"
+source "$ROS_SETUP"
 source "$LOTUSIM_WS/install/setup.bash"
 source "$LOTUSIM_SCENARIO_WS/install/setup.bash"
 
@@ -192,7 +206,7 @@ if [[ "$USE_UNITY" == "true" ]]; then
 
   # Launch ROS–Unity bridge
   gnome-terminal -- bash -c "
-    source /opt/ros/humble/setup.bash
+    source /opt/ros/${ROS_DISTRO}/setup.bash
     source \"$LOTUSIM_WS/install/setup.bash\"
     export ROS_DOMAIN_ID=$ROS_DOMAIN_ID
     export ROS_IP=$ROS_IP

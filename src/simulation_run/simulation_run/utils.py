@@ -167,7 +167,7 @@ def generate_random_pose(agent_first_domain: str) -> List[float]:
 
 
 def generate_lotus_param(
-    model_name,
+    renderer_type_name,
     domains: list[str],
     thrusters: list[str],
     xdyn_ip: str | None,
@@ -207,10 +207,10 @@ def generate_lotus_param(
     # RENDER BLOCK — always present
     # ------------------------------------------------------------------
     render_block = f"""
-  <render_interface>
-    <publish_render>true</publish_render>
-    <renderer_type_name>{model_name}</renderer_type_name>
-  </render_interface>"""
+    <render_interface>
+        <publish_render>true</publish_render>
+        <renderer_type_name>{renderer_type_name}</renderer_type_name>
+    </render_interface>"""
 
     # ------------------------------------------------------------------
     # PHYSICS BLOCK — ONLY IF XDyn is used
@@ -356,12 +356,10 @@ def normalize_agent_name(name: str) -> str:
 
 def find_agent_class_globally(agent_name: str):
     """Load agent class from entry points declared by ROS2 agent packages."""
-    groups = entry_points()
-
-    if "lotusim.agents" not in groups:
+    eps = entry_points(group="lotusim.agents")
+    if not eps:
         return None
-
     normalized = normalize_agent_name(agent_name)
-    for ep in groups["lotusim.agents"]:
+    for ep in eps:
         if normalize_agent_name(ep.name) == normalized:
             return ep.load()

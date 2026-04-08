@@ -19,7 +19,7 @@ the `lotus_param` method to provide XML configuration for thrusters, sensors, an
 xdyn parameters.
 
 @version 0.1
-@date 2025-10-08
+@date 2026-03-04
 
 This program and the accompanying materials are made available under the
 terms of the Eclipse Public License 2.0 which is available at:
@@ -65,15 +65,15 @@ class Agent(Node, ABC):  #  Inherit from Node and Abstract Base Class
             world_name (str): Simulation world name.
             xdyn_port (int): Network port for xdyn.
         """
-        self.name = f"{self.__class__.__name__.lower()}{self.num}"
+        self.agent_name = f"{self.__class__.__name__.lower()}{self.num}"
 
         self.world_name = world_name
 
-        super().__init__(self.name)
+        super().__init__(self.agent_name)
 
         # Fill in the SDF string with provided parameters
         self.sdf_string = sdf_string.format(
-            name=self.name,
+            name=self.agent_name,
             port=xdyn_port if xdyn_port is not None else 0,
             world_name=world_name,
         )
@@ -123,7 +123,7 @@ class Agent(Node, ABC):  #  Inherit from Node and Abstract Base Class
     def _poses_callback(self, msg: VesselPositionArray):
         """Track the agent’s current pose from /poses topic."""
         for vessel in msg.vessels:
-            if vessel.vessel_name == self.name:
+            if vessel.vessel_name == self.agent_name:
                 self.current_pose = vessel.pose
                 self.last_pose_update = time.time()
 
@@ -165,7 +165,8 @@ class Agent(Node, ABC):  #  Inherit from Node and Abstract Base Class
         cmd = MASCmd()
         cmd.cmd_type = MASCmd.CREATE_CMD
         cmd.model_name = self.model_name
-        cmd.vessel_name = self.name
+        cmd.sdf_file = self.sdf_file
+        cmd.vessel_name = self.agent_name
 
         cmd.sdf_string = self.lotus_param()
 
@@ -177,10 +178,10 @@ class Agent(Node, ABC):  #  Inherit from Node and Abstract Base Class
         cmd.geo_point = geo
         goal_msg.cmd = cmd
 
-        print(f"[{self.name}] Sending MAS command with GeoPoint: lat={lat}, lon={lon}, alt={alt}")
+        print(f"[{self.agent_name}] Sending MAS command with GeoPoint: lat={lat}, lon={lon}, alt={alt}")
 
         if not self.mas_action_client.wait_for_server(timeout_sec=server_timeout_sec):
-            self.get_logger().error(f"{self.name}: MASCmd server unavailable.")
+            self.get_logger().error(f"{self.agent_name}: MASCmd server unavailable.")
             return None
 
         return self.mas_action_client.send_goal_async(goal_msg)
@@ -192,7 +193,8 @@ class Agent(Node, ABC):  #  Inherit from Node and Abstract Base Class
         cmd = MASCmd()
         cmd.cmd_type = MASCmd.CREATE_CMD
         cmd.model_name = self.model_name
-        cmd.vessel_name = self.name
+        cmd.sdf_file = self.sdf_file
+        cmd.vessel_name = self.agent_name
 
         cmd.sdf_string = self.lotus_param()
 
@@ -205,10 +207,10 @@ class Agent(Node, ABC):  #  Inherit from Node and Abstract Base Class
         cmd.vessel_position = pose_msg
         goal_msg.cmd = cmd
 
-        print(f"[{self.name}] Sending MAS command with XYZ pose: {pose}")
+        print(f"[{self.agent_name}] Sending MAS command with XYZ pose: {pose}")
 
         if not self.mas_action_client.wait_for_server(timeout_sec=server_timeout_sec):
-            self.get_logger().error(f"{self.name}: MASCmd server unavailable.")
+            self.get_logger().error(f"{self.agent_name}: MASCmd server unavailable.")
             return None
 
         return self.mas_action_client.send_goal_async(goal_msg)
@@ -218,11 +220,11 @@ class Agent(Node, ABC):  #  Inherit from Node and Abstract Base Class
         goal_msg = lotusim_msgs.action.MASCmd.Goal()
         cmd = MASCmd()
         cmd.cmd_type = MASCmd.DELETE_CMD
-        cmd.vessel_name = self.name
+        cmd.vessel_name = self.agent_name
         goal_msg.cmd = cmd
 
         if not self.mas_action_client.wait_for_server(timeout_sec=server_timeout_sec):
-            self.get_logger().error(f"{self.name}: MASCmd server unavailable.")
+            self.get_logger().error(f"{self.agent_name}: MASCmd server unavailable.")
             return None
         return self.mas_action_client.send_goal_async(goal_msg)
 
@@ -267,7 +269,7 @@ class Agent(Node, ABC):  #  Inherit from Node and Abstract Base Class
 
         for topic_name, types in all_topics:
             # Only consider topics that belong to this agent
-            if f"/{self.world_name}/{self.name}/" not in topic_name:
+            if f"/{self.world_name}/{self.agent_name}/" not in topic_name:
                 continue
 
             # Skip topics we already subscribed to
@@ -298,13 +300,13 @@ class Agent(Node, ABC):  #  Inherit from Node and Abstract Base Class
             # Store subscription and mark topic as subscribed
             self.sensors_subscribers.append(sub)
             self._subscribed_topics.add(topic_name)
-            self.get_logger().info(f"{self.name} subscribed dynamically to: {topic_name} (type={MsgType.__name__})")
+            self.get_logger().info(f"{self.agent_name} subscribed dynamically to: {topic_name} (type={MsgType.__name__})")
 
         # Stop discovery timer if all agent topics have been subscribed
-        expected_prefix = f"/{self.world_name}/{self.name}/"
+        expected_prefix = f"/{self.world_name}/{self.agent_name}/"
         if all(t.startswith(expected_prefix) for t in self._subscribed_topics) and len(self._subscribed_topics) > 0:
             self.discovery_timer.cancel()
-            self.get_logger().info(f"{self.name} stopping discovery timer.")
+            self.get_logger().info(f"{self.agent_name} stopping discovery timer.")
 
     def _sensor_callback(self, msg, buffer_name: str, topic_name: str):
         """

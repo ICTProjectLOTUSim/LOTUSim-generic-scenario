@@ -1,20 +1,58 @@
 # LOTUSim Generic Scenario
 
+## Overview
+
+LOTUSim Generic Scenario is a multi-agent simulation framework built on ROS 2 and Gazebo.
+This repository provides a ready-to-use scenario workspace on top of the [LOTUSim core](https://github.com/naval-group/LOTUSim).
+
+Supports:
+- Ubuntu 22.04 → ROS 2 Humble
+- Ubuntu 24.04 → ROS 2 Jazzy
+
+---
+
 ## Installation 
 
-Clone the repository in the location: `$HOME/Documents/workspace/lotusim/`
+### Option 1 — Automated (Recommended)
 
-```sh
-mkdir -p ~/Documents/workspace/lotusim
-cd workspace/lotusim/
-sudo apt update
-sudo apt install -y jq
-git clone --recurse-submodules https://github.com/naval-group/LOTUSim-generic-scenario
+Use the provided install script to set up everything in one step:
+
+```bash
+chmod +x install_core_and_generic_scenario.sh
+./install_core_and_generic_scenario.sh
 ```
 
-And after cloning:
+The script will automatically:
+1. Detect your Ubuntu version and select the matching ROS 2 distribution
+2. Install system dependencies (`git`, `jq`, `curl`, etc.)
+3. Install Python dependencies (`pyarrow`, `pandas`, `matplotlib`, `opencv-python`)
+4. Clone the LOTUSim core repository into `~/lotusim_ws`
+5. Configure your `~/.bashrc` with all required environment variables
+6. Run `lotusim install` to set up ROS 2 and Gazebo
+7. Clone and build the LOTUSim Generic Scenario workspace
 
-```sh
+#### What Gets Installed
+
+| Component | Location |
+|---|---|
+| LOTUSim Core | `~/lotusim_ws/src/LOTUSim` |
+| Generic Scenario | `~/Documents/workspace/lotusim/LOTUSim-generic-scenario` |
+| ROS 2 (Humble or Jazzy) | `/opt/ros/<distro>` |
+
+The script is **idempotent** — safe to run multiple times. It will skip cloning if repositories already exist and skip `~/.bashrc` modifications if the LOTUSim block is already present.
+
+---
+
+### Option 2 — Manual
+
+Clone the repository:
+
+```bash
+mkdir -p ~/Documents/workspace/lotusim
+cd ~/Documents/workspace/lotusim
+sudo apt update && sudo apt install -y jq
+git clone --recurse-submodules https://github.com/naval-group/LOTUSim-generic-scenario
+cd LOTUSim-generic-scenario
 git submodule update --remote --merge
 ```
 
@@ -60,7 +98,7 @@ All configuration files are located in: `/LOTUSim-generic-scenario/src/simulatio
 
 
 
-### Spawning Agents: Supported Initialization Formats
+### Spawning Agents: Supported Initialization Pose Formats
 
 When spawning an agent in the simulation, the user can initialize its position in **two different ways**, depending on the number of elements provided in the pose array.
 
