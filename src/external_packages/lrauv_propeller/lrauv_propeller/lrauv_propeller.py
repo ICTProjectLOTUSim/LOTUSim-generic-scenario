@@ -55,7 +55,7 @@ class LrauvPropeller(Lrauv):
         # ROS2 publisher to send propeller commands
         self.vesselCmd_pub = self.create_publisher(
             VesselCmdArray,
-            f"/{world_name}/lotusim_vessel_array_cmd",
+            f"/{world_name}/vessel_cmd_array",
             self.qos_profile,
         )
 
@@ -145,7 +145,7 @@ class LrauvPropeller(Lrauv):
         # Create a VesselCmdArray message
         cmd_array = VesselCmdArray()
         cmd = VesselCmd()
-        cmd.vessel_name = getattr(self, "name", "UNKNOWN")  # Use agent name if available
+        cmd.vessel_name = getattr(self, "agent_name", "UNKNOWN")  # Use agent name if available
         # JSON command automatically uses the thruster name
         cmd.cmd_string = json.dumps({f"{thruster}(rpm)": rpm, f"{thruster}(P/D)": pd})
         cmd_array.cmds.append(cmd)
