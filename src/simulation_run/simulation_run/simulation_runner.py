@@ -54,13 +54,20 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 # -------------------------------------------------------------------------
 # Simulation Launch Utilities
 # -------------------------------------------------------------------------
-def build_launch_command(world_file: str, aerial_domain: bool, debug: bool = False, gui: bool = False) -> List[str]:
+def build_launch_command(
+    world_file: str,
+    aerial_domain: bool,
+    aerial_world: str = "",
+    debug: bool = False,
+    gui: bool = False,
+) -> List[str]:
     """
     Builds the shell commands required to launch the Lotusim simulation.
 
     Args:
         world_file: Path to the world file to launch.
         aerial_domain: Whether to launch in aerial mode.
+        aerial_world: Optional aerial world file name.
         debug: Enable debug mode (adds '--debug' flag to commands).
         gui: Enable Gazebo GUI (adds '--gui' flag to commands).
 
@@ -73,7 +80,8 @@ def build_launch_command(world_file: str, aerial_domain: bool, debug: bool = Fal
     commands: List[str] = []
 
     if aerial_domain:
-        commands.append(f"{base_command} {debug_flag} {gui_flag} run aerialWorld.world".strip())
+        aerial_world_file = aerial_world or "aerialWorld.world"
+        commands.append(f"{base_command} {debug_flag} {gui_flag} run {aerial_world_file}".strip())
         commands.append(f"{base_command} {debug_flag} {gui_flag} run {world_file}".strip())
     else:
         commands.append(f"{base_command} {debug_flag} {gui_flag} run {world_file}".strip())
@@ -128,6 +136,7 @@ def run_simulation(
     agents: Dict[str, Any],
     max_simulation_time: Optional[float] = None,
     aerial_domain: bool = False,
+    aerial_world: str = "",
     debug_mode: bool = False,
     gui=False,
 ) -> Any:
@@ -147,6 +156,7 @@ def run_simulation(
         agents: Full agents dictionary as in JSON.
         max_simulation_time: Optional maximum simulation duration (seconds).
         aerial_domain: Whether to launch an aerial domain.
+        aerial_world: Optional aerial world file name.
         debug_mode: Enable verbose logging.
         gui: Enable Gazebo GUI.
     """
@@ -168,7 +178,13 @@ def run_simulation(
     # Reset Gazebo and prepare launch command
     reset_gazebo_state()
 
-    launch_commands = build_launch_command(world_file, aerial_domain, debug=debug_mode, gui=gui)
+    launch_commands = build_launch_command(
+        world_file,
+        aerial_domain,
+        aerial_world=aerial_world,
+        debug=debug_mode,
+        gui=gui,
+    )
 
     # Start simulation process
     process = start_simulation_process(launch_commands)
@@ -177,6 +193,12 @@ def run_simulation(
 
     # Initialize ROS agents and bridges using the full agents dictionary
     world_name = utils.get_world_name(world_file)
+    if aerial_domain:
+        aerial_world_file = aerial_world or "aerialWorld.world"
+        aerial_world_name = utils.get_world_name(aerial_world_file)
+        os.environ["LOTUSIM_AERIAL_WORLD_NAME"] = aerial_world_name
+        logging.info("Using aerial world namespace: %s", aerial_world_name)
+
     agents_manager = ros_manager.initialize_ros_components(executor, agents, world_name, aerial_domain)
 
     try:

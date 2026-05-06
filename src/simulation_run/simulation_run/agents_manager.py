@@ -133,6 +133,8 @@ class AgentsManager:
             sdf_file = agent_info.get("sdf_file", "")
             # If xdYn is already a bool in the new JSON
             xdyn_enabled = bool(agent_info.get("xdyn", False))
+            px4_enabled = bool(agent_info.get("px4", False))
+            px4_control = agent_info.get("px4_control")
 
             # Convert JSON/mission name -> Python class
             class_name = utils.json_name_to_class_name(agent_type)
@@ -148,9 +150,16 @@ class AgentsManager:
 
                 logging.info(f"Creating agent '{instance_name}' of type '{agent_type}' with SDF from '{sdf_file}'")
 
-                agent_node = self._create_agent_instance(agent_class, unique_sdf, world_name, xdyn_enabled)
+                agent_node = self._create_agent_instance(
+                    agent_class,
+                    unique_sdf,
+                    world_name,
+                    xdyn_enabled,
+                    px4_enabled=px4_enabled,
+                )
                 agent_node.agent_name = instance_name
                 agent_node.sdf_file = sdf_file
+                agent_node.px4_control = px4_control
 
                 pose = poses[i] if i < len(poses) else utils.generate_random_pose(agent_node.get_first_domain())
 
@@ -166,9 +175,13 @@ class AgentsManager:
         agent_sdf: Any,
         world_name: str,
         xdyn_enabled: bool,
+        px4_enabled: bool = False,
     ) -> Any:
         """Instantiates a single agent node."""
-        return agent_class(agent_sdf, world_name, xdyn_enabled)
+        try:
+            return agent_class(agent_sdf, world_name, xdyn_enabled, px4_enabled=px4_enabled)
+        except TypeError:
+            return agent_class(agent_sdf, world_name, xdyn_enabled)
 
     def _register_agent(
         self,
