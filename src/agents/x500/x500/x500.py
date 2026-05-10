@@ -94,6 +94,7 @@ class X500(Agent):
             self.get_logger().info(f"[{self.agent_name}] Removed stale dataman file.")
 
         env = os.environ.copy()
+        env["GZ_CONFIG_PATH"] = f"/usr/share/gz:{env.get('GZ_CONFIG_PATH', '')}"
         env["PX4_GZ_MODEL_NAME"] = self.agent_name
         env["PX4_GZ_WORLD"] = gz_world
 
