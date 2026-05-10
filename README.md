@@ -90,6 +90,28 @@ colcon build
 source install/setup.bash 
 ```
 
+### Optional: PX4 SITL Support
+
+PX4 is used as an external dependency for PX4-enabled X500 scenarios. It is not included inside this repository.
+
+Install PX4 separately:
+
+```sh
+cd $HOME
+git clone https://github.com/PX4/PX4-Autopilot.git
+cd PX4-Autopilot
+bash ./Tools/setup/ubuntu.sh
+make px4_sitl gz_x500
+```
+
+Add the PX4 path to your environment:
+
+```sh
+export PX4_AUTOPILOT_PATH=$HOME/PX4-Autopilot
+```
+
+For a persistent setup, add this line to your shell configuration file, for example `~/.bashrc`.
+
 Your setup is now complete, you’re ready to start a simulation!
 
 ## Configure the parameters for your simulation
@@ -238,6 +260,12 @@ Once your configuration is ready, you can launch the simulation:
 
     ```sh
     ./src/simulation_run/executable/scenario_launch.sh --config $HOME/Documents/workspace/lotusim/LOTUSim-generic-scenario/src/simulation_run/config/defenseScenario.json --debug
+    ```
+
+    To launch the PX4-enabled X500 scenario:
+
+    ```sh
+    ./src/simulation_run/executable/scenario_launch.sh --config $HOME/Documents/workspace/lotusim/LOTUSim-generic-scenario/src/simulation_run/config/defenseScenarioPx4.json --debug
     ```
 
 5. **In the second terminal**, source workspaces and launch the following bridge to activate these features:
