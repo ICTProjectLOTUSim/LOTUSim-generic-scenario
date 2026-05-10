@@ -70,7 +70,7 @@ def get_cli_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def parse_simulation_config(config: Dict[str, Any]) -> Tuple[str, Dict[str, Any], bool]:
+def parse_simulation_config(config: Dict[str, Any]) -> Tuple[str, Dict[str, Any], bool, str]:
     """
     Parse the simulation configuration and extract only the essential data.
 
@@ -81,14 +81,16 @@ def parse_simulation_config(config: Dict[str, Any]) -> Tuple[str, Dict[str, Any]
         tuple: (
             world_file (str),
             agents (dict): full agent data as in JSON,
-            aerial_enabled (bool)
+            aerial_enabled (bool),
+            aerial_world (str)
         )
     """
     world_file = config.get("world_file", "")
     agents = config.get("agents", {})
     aerial_enabled = bool(config.get("aerial_domain", False))
+    aerial_world = config.get("aerial_world", "")
 
-    return world_file, agents, aerial_enabled
+    return world_file, agents, aerial_enabled, aerial_world
 
 
 # ----------------------------------------------------------------------
@@ -226,10 +228,11 @@ def generate_lotus_param(
             physics_block += f"\n    <{domain_lower}>"
 
             if domain == "Aerial":
+                aerial_namespace = os.environ.get("LOTUSIM_AERIAL_WORLD_NAME", "aerialWorld")
                 physics_block += """
                     <connection_type>ROS2</connection_type>
-                    <namespace>aerialWorld</namespace>
-                """
+                    <namespace>{aerial_namespace}</namespace>
+                """.format(aerial_namespace=aerial_namespace)
             else:
                 if xdyn_ip and xdyn_port:
                     thruster_xml = "".join(

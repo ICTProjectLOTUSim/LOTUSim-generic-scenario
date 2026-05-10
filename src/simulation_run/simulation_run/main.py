@@ -79,13 +79,18 @@ def main():
     print(f"\033[93m[DEBUG] Debug mode is {'ENABLED' if args.debug else 'DISABLED'}\033[0m")
     print(f"\033[93m[DEBUG] GUI mode is {'ENABLED' if args.gui else 'DISABLED'}\033[0m")
 
-    # Determine config path
-    try:
-        package_share_directory = get_package_share_directory("simulation_run")
-        config_path = os.path.join(package_share_directory, "config", args.config)
-    except Exception:
-        package_share_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-        config_path = os.path.join(package_share_directory, "config", args.config)
+    # Determine config path. Accept an absolute path, an existing path relative
+    # to the current working directory, or a config filename installed with the
+    # simulation_run package.
+    if os.path.isabs(args.config) or os.path.exists(args.config):
+        config_path = args.config
+    else:
+        try:
+            package_share_directory = get_package_share_directory("simulation_run")
+            config_path = os.path.join(package_share_directory, "config", args.config)
+        except Exception:
+            package_share_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+            config_path = os.path.join(package_share_directory, "config", args.config)
 
     config_path = os.path.normpath(config_path)
     if not os.path.exists(config_path):
@@ -103,12 +108,17 @@ def main():
     print("Configuration loaded successfully.")
 
     # Parse config
-    world_file, agents, aerial_enabled = utils.parse_simulation_config(config)
+    world_file, agents, aerial_enabled, aerial_world = utils.parse_simulation_config(config)
 
     # Run simulation
     print("Starting Simulation...")
     simulation_runner.run_simulation(
-        world_file, agents, aerial_domain=aerial_enabled, debug_mode=args.debug, gui=args.gui
+        world_file,
+        agents,
+        aerial_domain=aerial_enabled,
+        aerial_world=aerial_world,
+        debug_mode=args.debug,
+        gui=args.gui,
     )
 
 

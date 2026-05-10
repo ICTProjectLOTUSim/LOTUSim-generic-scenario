@@ -14,6 +14,10 @@ SPDX-License-Identifier: EPL-2.0
 Copyright (c) 2025 Naval Group
 """
 
+import os
+import subprocess
+import time
+
 from simulation_run.agent import Agent
 from simulation_run import utils
 
@@ -45,7 +49,7 @@ class X500(Agent):
     # ------------------------------------------------------------------
     # Initialization
     # ------------------------------------------------------------------
-    def __init__(self, sdf_string: str, world_name: str, xdyn_enabled=False):
+    def __init__(self, sdf_string: str, world_name: str, xdyn_enabled=False, px4_enabled: bool = False):
         """
         Initializes an X500 aerial agent.
 
@@ -53,10 +57,13 @@ class X500(Agent):
             sdf_string (str): The SDF (Simulation Description Format) string for the agent.
             world_name (str): Name of the simulation world.
             xdyn_enabled (bool): Flag to enable or disable XDyn communication. (False for aerial agents)
+            px4_enabled (bool): Flag to enable PX4 SITL launch after spawn.
         """
         self.num = self.get_unique_model_num()
-        self.model_name = "x500"
-        self.renderer_type_name = self.model_name
+        self.px4_enabled = px4_enabled
+        self.model_name = "x500_px4" if px4_enabled else "x500"
+        self.renderer_type_name = "x500"
+        self.px4_process = None
 
         # xdyn_enabled cannot be true for aerial agents
         self.xdyn_port = None
@@ -66,6 +73,53 @@ class X500(Agent):
 
         # Initialize the base Agent class
         super().__init__(sdf_string, world_name, self.xdyn_port)
+
+    def send_single_mas_cmd(self, value, server_timeout_sec: float = 5.0):
+        result = super().send_single_mas_cmd(value, server_timeout_sec)
+        if not self.px4_enabled or self.px4_process is not None:
+            return result
+
+        time.sleep(3.0)
+        self._start_px4_sitl()
+        return result
+
+    def _start_px4_sitl(self) -> None:
+        px4_path = os.environ.get("PX4_AUTOPILOT_PATH", os.path.expanduser("~/PX4-Autopilot"))
+        gz_world = os.environ.get("PX4_GZ_WORLD", "aerialPx4World")
+        px4_log_path = os.environ.get("PX4_SITL_LOG", os.path.join(px4_path, "px4_sitl.log"))
+
+        dataman_path = os.path.join(px4_path, "dataman")
+        if os.path.exists(dataman_path):
+            os.remove(dataman_path)
+            self.get_logger().info(f"[{self.agent_name}] Removed stale dataman file.")
+
+        env = os.environ.copy()
+        env["GZ_CONFIG_PATH"] = f"/usr/share/gz:{env.get('GZ_CONFIG_PATH', '')}"
+        env["PX4_GZ_MODEL_NAME"] = self.agent_name
+        env["PX4_GZ_WORLD"] = gz_world
+
+        cmd = ["make", "px4_sitl", "gz_x500"]
+        self.get_logger().info(
+            f"[{self.agent_name}] Starting PX4 SITL -- model='{env['PX4_GZ_MODEL_NAME']}', world='{gz_world}'"
+        )
+        with open(px4_log_path, "a", encoding="utf-8") as log_file:
+            self.px4_process = subprocess.Popen(
+                cmd,
+                cwd=px4_path,
+                env=env,
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+
+    def destroy_node(self):
+        if self.px4_process and self.px4_process.poll() is None:
+            self.px4_process.terminate()
+            try:
+                self.px4_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.px4_process.kill()
+        return super().destroy_node()
 
     # ------------------------------------------------------------------
     # LOTUSim Parameters
